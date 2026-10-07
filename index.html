@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pali: Pain Diary</title>
+<meta name="description" content="A calm pain diary for iPhone. Your diary stays on your iPhone: no account, no server, no tracking.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3EDEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15111C" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="alternate" hreflang="en" href="?lang=en">
+<link rel="alternate" hreflang="es" href="?lang=es">
+<link rel="alternate" hreflang="pt-BR" href="?lang=pt-BR">
+<style>
+  :root {
+    --canvas: #F3EDEF;
+    --ink: #25202F;
+    --muted: #534A5C;
+    --peach: #F9DCCB;
+    --lilac: #E8CDE3;
+    --mist: #DAE0E8;
+    --card: rgba(255, 253, 252, 0.62);
+    --stroke: rgba(255, 255, 255, 0.9);
+    --accent: #61428F;
+    --shadow: 0 1px 2px rgba(37, 32, 47, 0.04), 0 8px 24px rgba(37, 32, 47, 0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas: #15111C;
+      --ink: #F3EDF7;
+      --muted: #B9AFC4;
+      --peach: #3A2530;
+      --lilac: #2E2340;
+      --mist: #1D2333;
+      --card: rgba(44, 36, 56, 0.62);
+      --stroke: rgba(255, 255, 255, 0.12);
+      --accent: #C6B0E0;
+      --shadow: none;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background-color: var(--canvas);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* The app's canvas glows, fixed behind the content (works on iOS Safari too). */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(circle at 12% 8%, var(--peach), transparent 60vmax),
+      radial-gradient(circle at 95% 30%, var(--lilac), transparent 60vmax),
+      radial-gradient(circle at 25% 90%, var(--mist), transparent 60vmax),
+      var(--canvas);
+  }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 48px max(20px, env(safe-area-inset-left));
+  }
+
+  /* Top bar */
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 8px; }
+  .studio { color: var(--muted); text-decoration: none; font-size: 15px; font-weight: 500; }
+  .studio:hover { color: var(--ink); }
+  .langs { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--card); border: 1px solid var(--stroke); box-shadow: var(--shadow); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  .langs button {
+    appearance: none; border: 0; background: transparent; color: var(--muted);
+    font: inherit; font-size: 14px; font-weight: 600; letter-spacing: 0.02em;
+    min-width: 44px; min-height: 36px; padding: 0 12px; border-radius: 999px; cursor: pointer;
+  }
+  .langs button[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
+  .langs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 40px 0 28px; }
+  .hero picture img {
+    width: 112px; height: 112px; border-radius: 25px; display: block; margin: 0 auto 22px;
+    box-shadow: 0 10px 30px rgba(67, 43, 110, 0.18), 0 2px 6px rgba(67, 43, 110, 0.12);
+  }
+  h1 { font-size: clamp(34px, 7vw, 44px); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 12px; font-weight: 700; }
+  .tagline { font-size: clamp(18px, 3.4vw, 21px); color: var(--muted); margin: 0 auto; max-width: 30em; }
+  .facts { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .facts li { font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--stroke); }
+
+  nav.toc { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 6px 0 8px; }
+  nav.toc a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; padding: 10px 14px; border-radius: 12px; }
+  nav.toc a:hover { background: var(--card); }
+
+  section { padding-top: 36px; scroll-margin-top: 12px; }
+  h2 { font-size: 28px; letter-spacing: -0.01em; margin: 0 0 16px; line-height: 1.2; }
+  h3 { font-size: 18px; margin: 0 0 6px; line-height: 1.3; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); text-underline-offset: 2px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--stroke); border-radius: 22px; padding: 20px;
+    box-shadow: var(--shadow); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid .card p { color: var(--muted); margin: 0; font-size: 16px; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+
+  .note { margin-top: 12px; display: flex; gap: 12px; align-items: flex-start; }
+  .note p { margin: 0; }
+  .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-top: 8px; }
+
+  .policy .card + .card { margin-top: 12px; }
+  .policy .card p:last-child, .policy .card ul:last-child { margin-bottom: 0; }
+  .policy ul { margin: 0 0 12px; padding-left: 20px; }
+  .policy li { margin-bottom: 4px; }
+  .summary { font-size: 18px; }
+  .updated { font-size: 15px; color: var(--muted); margin: -8px 0 16px; }
+
+  details { border-top: 1px solid var(--stroke); }
+  details:first-of-type { border-top: 0; }
+  summary { cursor: pointer; font-weight: 600; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 22px; line-height: 1; }
+  details[open] summary::after { content: "\2212"; }
+  details p { color: var(--muted); padding-bottom: 6px; }
+  .mail { display: inline-block; margin-top: 4px; font-weight: 600; font-size: 18px; }
+
+  footer { text-align: center; color: var(--muted); font-size: 14px; padding-top: 48px; }
+  footer p { margin: 0 0 6px; }
+
+  /* One language at a time. Without JavaScript, English shows. */
+  main[data-l] { display: none; }
+  html[data-lang="en"] main[data-l="en"],
+  html[data-lang="es"] main[data-l="es"],
+  html[data-lang="pt-BR"] main[data-l="pt-BR"] { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar">
+    <a class="studio" href="https://pytyvolabs.com/">Pytyvo Labs</a>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-set="en" lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-set="es" lang="es" aria-pressed="false">ES</button>
+      <button type="button" data-set="pt-BR" lang="pt-BR" aria-pressed="false">PT</button>
+    </div>
+  </div>
+
+  <header class="hero">
+    <picture>
+      <source srcset="icon-dark.png" media="(prefers-color-scheme: dark)">
+      <img src="icon.png" alt="" width="112" height="112">
+    </picture>
+    <h1>Pali: Pain Diary</h1>
+  </header>
+
+  <!-- ===================== ENGLISH ===================== -->
+  <main data-l="en" lang="en">
+    <div class="hero" style="padding-top:0">
+      <p class="tagline">A calm pain diary for iPhone. Log how you feel in under a minute and bring a clear summary to your next appointment.</p>
+      <ul class="facts">
+        <li>Stays on your iPhone</li>
+        <li>No account</li>
+        <li>No tracking</li>
+      </ul>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#about">About</a><a href="#privacy">Privacy</a><a href="#support">Support</a>
+    </nav>
+
+    <section id="about">
+      <h2>What Pali does</h2>
+      <div class="grid">
+        <div class="card"><h3>Daily check-in</h3><p>Your average pain from 0 to 10, and how much it got in the way of daily activities, enjoyment of life and sleep. Mood, where it hurt, medication, triggers, relief and a note are optional.</p></div>
+        <div class="card"><h3>Body map</h3><p>Mark where it hurt, front and back, with an intensity for each spot.</p></div>
+        <div class="card"><h3>Flares</h3><p>Log a moment of stronger pain when it happens, so the day's average stays an average.</p></div>
+        <div class="card"><h3>Weekly check</h3><p>The PEG scale (pain, enjoyment of life, general activity), a short validated measure used to follow chronic pain over time.</p></div>
+        <div class="card"><h3>History</h3><p>A calendar of your days. Tap a day to see its details, or log a day you missed.</p></div>
+        <div class="card"><h3>PDF report</h3><p>A one-page summary of the period you choose, ready to share with your care team.</p></div>
+        <div class="card"><h3>Apple Health, if you want</h3><p>See sleep, steps and cycle next to your pain. Read only.</p></div>
+        <div class="card"><h3>Reminders</h3><p>A daily reminder at the time you choose, and one for the weekly check.</p></div>
+      </div>
+      <div class="card note">
+        <span class="dot" aria-hidden="true"></span>
+        <p>Pali is a diary, not a medical device. It does not diagnose, treat or give medical advice. Always follow your care team's advice.</p>
+      </div>
+      <p class="muted" style="margin-top:16px">Available in English, Spanish and Brazilian Portuguese. Requires iOS 17.6 or later.</p>
+    </section>
+
+    <section id="privacy" class="policy">
+      <h2>Privacy Policy</h2>
+      <p class="updated">Last updated: October 7, 2026</p>
+      <div class="card">
+        <p class="summary"><strong>In short: your diary stays on your iPhone.</strong> We don't collect, see, sell or share what you log.</p>
+        <p class="muted">This policy explains how Pali: Pain Diary ("Pali") handles your information. Pali is developed by Pytyvo Labs (CAMILE ALVES ANCINES LTDA, Brazil).</p>
+      </div>
+      <div class="card">
+        <h3>1. Information we collect</h3>
+        <p>None. Pali has no account, no server and no cloud sync, so we have no way to see what you log.</p>
+      </div>
+      <div class="card">
+        <h3>2. What Pali stores on your iPhone</h3>
+        <p>Your check-ins, flares, weekly checks, body map, medications, triggers, relief, notes and settings are stored only on your device and protected by iOS data protection.</p>
+        <p>If you use iCloud Backup or back up your iPhone to a computer, your diary is included in those backups. They are managed by Apple under your account, and we have no access to them.</p>
+      </div>
+      <div class="card">
+        <h3>3. Apple Health</h3>
+        <p>If you choose to connect Apple Health, Pali reads sleep, step count and menstrual flow to show them next to your pain, in the app and in your PDF report.</p>
+        <ul>
+          <li>Pali never writes anything to Health.</li>
+          <li>Pali doesn't store Health data. It reads it when needed and keeps it out of backups and exports.</li>
+          <li>Health data is never used for advertising and never shared with anyone.</li>
+        </ul>
+        <p>You can change or revoke access at any time in the Health app (your profile, then Apps, then Pali) or turn it off in Pali under Settings &gt; Apple Health.</p>
+      </div>
+      <div class="card">
+        <h3>4. Notifications</h3>
+        <p>Reminders are scheduled on your iPhone. Nothing goes through our servers, because we don't have any.</p>
+      </div>
+      <div class="card">
+        <h3>5. Sharing and exports</h3>
+        <p>Your data leaves your iPhone only when you choose: when you share a PDF report, a backup file (JSON) or a spreadsheet (CSV). Once sent, a file is handled by the app or person who receives it. Importing only adds data from a file you pick.</p>
+      </div>
+      <div class="card">
+        <h3>6. When you contact us</h3>
+        <p>If you write to <a href="mailto:dev@pytyvolabs.com">dev@pytyvolabs.com</a>, we receive your email address and whatever you include in the message. The feedback email Pali prepares adds the app and iOS versions to help us answer. We use this only to reply to you and to improve Pali, and we delete it when it's no longer needed.</p>
+      </div>
+      <div class="card">
+        <h3>7. Analytics, ads and tracking</h3>
+        <p>Pali has no analytics, no ads and no third-party SDKs, and it doesn't track you across apps or websites.</p>
+        <p>If you have chosen to share analytics with app developers in your iPhone's settings, Apple may give us anonymous crash reports and usage statistics. They never include your diary.</p>
+      </div>
+      <div class="card">
+        <h3>8. Your choices and rights</h3>
+        <p>You can export or delete everything Pali stores at any time: export in Settings &gt; Export and import, delete in Settings &gt; Delete all data, or simply delete the app.</p>
+        <p>Because we hold no personal data about you, there is nothing for us to access, correct or delete on our side. You're always welcome to contact us about your rights under laws such as Brazil's LGPD or the EU's GDPR.</p>
+      </div>
+      <div class="card">
+        <h3>9. Children</h3>
+        <p>Pali is meant for adults living with chronic pain and is not directed to children.</p>
+      </div>
+      <div class="card">
+        <h3>10. Changes</h3>
+        <p>If this policy changes, we'll update this page and the date at the top.</p>
+      </div>
+      <div class="card">
+        <h3>11. Contact</h3>
+        <p>Pytyvo Labs (CAMILE ALVES ANCINES LTDA), Brazil<br><a href="mailto:dev@pytyvolabs.com">dev@pytyvolabs.com</a></p>
+      </div>
+    </section>
+
+    <section id="support">
+      <h2>Support</h2>
+      <div class="card">
+        <p>Questions, ideas or a problem? Write to us. In the app, Settings &gt; Feedback opens an email with your app and iOS versions already filled in.</p>
+        <a class="mail" href="mailto:dev@pytyvolabs.com?subject=Pali">dev@pytyvolabs.com</a>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <details>
+          <summary>How do I move my diary to a new iPhone?</summary>
+          <p>If you set up the new iPhone from an iCloud or computer backup, your diary comes along. Otherwise, on the old iPhone go to Settings &gt; Export and import, share the Backup file somewhere you trust (Files or AirDrop), then on the new iPhone open the same screen and choose Import a backup.</p>
+        </details>
+        <details>
+          <summary>My Apple Health data doesn't show up.</summary>
+          <p>iOS doesn't tell apps what you allowed. In the Health app, open your profile, go to Apps, choose Pali and turn on Sleep, Steps and Menstrual Flow. Data only appears for days that have it in Health.</p>
+        </details>
+        <details>
+          <summary>Reminders don't arrive.</summary>
+          <p>Check that notifications for Pali are on in your iPhone's Settings &gt; Notifications, and that the reminders are on in Pali under Settings &gt; Reminders. The daily reminder skips days you have already logged.</p>
+        </details>
+        <details>
+          <summary>Can I delete everything?</summary>
+          <p>Yes. Settings &gt; Delete all data erases your diary from the iPhone. Deleting the app does the same.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== ESPAÑOL ===================== -->
+  <main data-l="es" lang="es">
+    <div class="hero" style="padding-top:0">
+      <p class="tagline">Un diario del dolor tranquilo para iPhone. Registra cómo te sientes en menos de un minuto y lleva un resumen claro a tu próxima consulta.</p>
+      <ul class="facts">
+        <li>Se queda en tu iPhone</li>
+        <li>Sin cuenta</li>
+        <li>Sin rastreo</li>
+      </ul>
+    </div>
+    <nav class="toc" aria-label="Secciones">
+      <a href="#about-es">Acerca de</a><a href="#privacy-es">Privacidad</a><a href="#support-es">Soporte</a>
+    </nav>
+
+    <section id="about-es">
+      <h2>Qué hace Pali</h2>
+      <div class="grid">
+        <div class="card"><h3>Registro diario</h3><p>Tu dolor medio de 0 a 10 y cuánto interfirió en las actividades diarias, el disfrute de la vida y el sueño. El estado de ánimo, dónde dolió, la medicación, los desencadenantes, el alivio y una nota son opcionales.</p></div>
+        <div class="card"><h3>Mapa del cuerpo</h3><p>Marca dónde te dolió, de frente y de espaldas, con una intensidad para cada zona.</p></div>
+        <div class="card"><h3>Crisis</h3><p>Registra un momento de dolor más fuerte cuando ocurra, para que la media del día siga siendo una media.</p></div>
+        <div class="card"><h3>Revisión semanal</h3><p>La escala PEG (dolor, disfrute de la vida y actividad general), una medida breve y validada que se usa para seguir el dolor crónico a lo largo del tiempo.</p></div>
+        <div class="card"><h3>Historial</h3><p>Un calendario de tus días. Toca un día para ver sus detalles o para registrar un día que se te pasó.</p></div>
+        <div class="card"><h3>Informe en PDF</h3><p>Un resumen de una página del periodo que elijas, listo para compartir con tu equipo médico.</p></div>
+        <div class="card"><h3>Salud, si quieres</h3><p>Ve el sueño, los pasos y el ciclo junto a tu dolor. Solo lectura.</p></div>
+        <div class="card"><h3>Recordatorios</h3><p>Un recordatorio diario a la hora que elijas y otro para la revisión semanal.</p></div>
+      </div>
+      <div class="card note">
+        <span class="dot" aria-hidden="true"></span>
+        <p>Pali es un diario, no un dispositivo médico. No diagnostica, no trata ni da consejos médicos. Sigue siempre las indicaciones de tu equipo médico.</p>
+      </div>
+      <p class="muted" style="margin-top:16px">Disponible en inglés, español y portugués de Brasil. Requiere iOS 17.6 o posterior.</p>
+    </section>
+
+    <section id="privacy-es" class="policy">
+      <h2>Política de privacidad</h2>
+      <p class="updated">Última actualización: 7 de octubre de 2026</p>
+      <div class="card">
+        <p class="summary"><strong>En resumen: tu diario se queda en tu iPhone.</strong> No recopilamos, vemos, vendemos ni compartimos lo que registras.</p>
+        <p class="muted">Esta política explica cómo Pali: Pain Diary («Pali») trata tu información. Pali está desarrollado por Pytyvo Labs (CAMILE ALVES ANCINES LTDA, Brasil).</p>
+      </div>
+      <div class="card">
+        <h3>1. Información que recopilamos</h3>
+        <p>Ninguna. Pali no tiene cuenta, servidor ni sincronización en la nube, así que no tenemos forma de ver lo que registras.</p>
+      </div>
+      <div class="card">
+        <h3>2. Qué guarda Pali en tu iPhone</h3>
+        <p>Tus registros diarios, crisis, revisiones semanales, mapa del cuerpo, medicaciones, desencadenantes, alivios, notas y ajustes se guardan solo en tu dispositivo y están protegidos por la protección de datos de iOS.</p>
+        <p>Si usas la copia de seguridad de iCloud o haces copias de tu iPhone en un ordenador, tu diario se incluye en esas copias. Las gestiona Apple en tu cuenta y nosotros no tenemos acceso a ellas.</p>
+      </div>
+      <div class="card">
+        <h3>3. App Salud (Apple Health)</h3>
+        <p>Si decides conectar la app Salud, Pali lee el sueño, los pasos y el flujo menstrual para mostrarlos junto a tu dolor, en la app y en tu informe en PDF.</p>
+        <ul>
+          <li>Pali nunca escribe nada en Salud.</li>
+          <li>Pali no guarda datos de Salud. Los lee cuando hace falta y los deja fuera de las copias y exportaciones.</li>
+          <li>Los datos de Salud nunca se usan para publicidad ni se comparten con nadie.</li>
+        </ul>
+        <p>Puedes cambiar o revocar el acceso en cualquier momento en la app Salud (tu perfil, luego Apps, luego Pali) o desactivarlo en Pali en Ajustes &gt; Salud.</p>
+      </div>
+      <div class="card">
+        <h3>4. Notificaciones</h3>
+        <p>Los recordatorios se programan en tu iPhone. Nada pasa por servidores nuestros, porque no tenemos ninguno.</p>
+      </div>
+      <div class="card">
+        <h3>5. Compartir y exportar</h3>
+        <p>Tus datos solo salen de tu iPhone cuando tú lo decides: al compartir un informe en PDF, una copia de seguridad (JSON) o una hoja de cálculo (CSV). Una vez enviado, el archivo queda a cargo de la app o la persona que lo recibe. La importación solo añade datos de un archivo que tú eliges.</p>
+      </div>
+      <div class="card">
+        <h3>6. Cuando nos escribes</h3>
+        <p>Si escribes a <a href="mailto:dev@pytyvolabs.com">dev@pytyvolabs.com</a>, recibimos tu dirección de correo y lo que incluyas en el mensaje. El correo de comentarios que prepara Pali añade las versiones de la app y de iOS para ayudarte mejor. Solo lo usamos para responderte y mejorar Pali, y lo borramos cuando ya no es necesario.</p>
+      </div>
+      <div class="card">
+        <h3>7. Análisis, anuncios y rastreo</h3>
+        <p>Pali no tiene análisis, anuncios ni SDK de terceros, y no te rastrea en otras apps ni sitios web.</p>
+        <p>Si has elegido compartir análisis con los desarrolladores en los ajustes de tu iPhone, Apple puede facilitarnos informes de fallos y estadísticas de uso anónimos. Nunca incluyen tu diario.</p>
+      </div>
+      <div class="card">
+        <h3>8. Tus opciones y derechos</h3>
+        <p>Puedes exportar o eliminar todo lo que guarda Pali en cualquier momento: exporta en Ajustes &gt; Exportar e importar, elimina en Ajustes &gt; Eliminar todos los datos o simplemente borra la app.</p>
+        <p>Como no conservamos datos personales tuyos, no hay nada que acceder, corregir o eliminar de nuestro lado. Puedes escribirnos siempre que tengas dudas sobre tus derechos según leyes como la LGPD de Brasil o el RGPD de la Unión Europea.</p>
+      </div>
+      <div class="card">
+        <h3>9. Menores</h3>
+        <p>Pali está pensado para adultos que viven con dolor crónico y no está dirigido a menores.</p>
+      </div>
+      <div class="card">
+        <h3>10. Cambios</h3>
+        <p>Si esta política cambia, actualizaremos esta página y la fecha de arriba.</p>
+      </div>
+      <div class="card">
+        <h3>11. Contacto</h3>
+        <p>Pytyvo Labs (CAMILE ALVES ANCINES LTDA), Brasil<br><a href="mailto:dev@pytyvolabs.com">dev@pytyvolabs.com</a></p>
+      </div>
+    </section>
+
+    <section id="support-es">
+      <h2>Soporte</h2>
+      <div class="card">
+        <p>¿Preguntas, ideas o algún problema? Escríbenos. En la app, Ajustes &gt; Comentarios abre un correo con las versiones de la app y de iOS ya incluidas.</p>
+        <a class="mail" href="mailto:dev@pytyvolabs.com?subject=Pali">dev@pytyvolabs.com</a>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <details>
+          <summary>¿Cómo paso mi diario a un iPhone nuevo?</summary>
+          <p>Si configuras el iPhone nuevo desde una copia de iCloud o del ordenador, tu diario viene incluido. Si no, en el iPhone antiguo ve a Ajustes &gt; Exportar e importar, comparte la Copia de seguridad en un lugar de confianza (Archivos o AirDrop) y, en el iPhone nuevo, abre la misma pantalla y elige Importar una copia.</p>
+        </details>
+        <details>
+          <summary>No aparecen mis datos de Salud.</summary>
+          <p>iOS no les dice a las apps qué has permitido. En la app Salud, abre tu perfil, ve a Apps, elige Pali y activa Sueño, Pasos y Flujo menstrual. Los datos solo aparecen en los días que los tienen en Salud.</p>
+        </details>
+        <details>
+          <summary>No me llegan los recordatorios.</summary>
+          <p>Comprueba que las notificaciones de Pali estén activadas en Ajustes &gt; Notificaciones de tu iPhone y que los recordatorios estén activados en Pali, en Ajustes &gt; Recordatorios. El recordatorio diario se salta los días que ya registraste.</p>
+        </details>
+        <details>
+          <summary>¿Puedo borrarlo todo?</summary>
+          <p>Sí. Ajustes &gt; Eliminar todos los datos borra tu diario del iPhone. Eliminar la app hace lo mismo.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== PORTUGUÊS ===================== -->
+  <main data-l="pt-BR" lang="pt-BR">
+    <div class="hero" style="padding-top:0">
+      <p class="tagline">Um diário de dor tranquilo para iPhone. Registre como você está em menos de um minuto e leve um resumo claro para a próxima consulta.</p>
+      <ul class="facts">
+        <li>Fica no seu iPhone</li>
+        <li>Sem conta</li>
+        <li>Sem rastreamento</li>
+      </ul>
+    </div>
+    <nav class="toc" aria-label="Seções">
+      <a href="#about-pt">Sobre</a><a href="#privacy-pt">Privacidade</a><a href="#support-pt">Suporte</a>
+    </nav>
+
+    <section id="about-pt">
+      <h2>O que o Pali faz</h2>
+      <div class="grid">
+        <div class="card"><h3>Registro diário</h3><p>Sua dor média de 0 a 10 e o quanto ela atrapalhou as atividades do dia, o prazer de viver e o sono. Humor, onde doeu, medicação, gatilhos, alívio e uma nota são opcionais.</p></div>
+        <div class="card"><h3>Mapa do corpo</h3><p>Marque onde doeu, de frente e de costas, com uma intensidade para cada ponto.</p></div>
+        <div class="card"><h3>Crises</h3><p>Registre um momento de dor mais forte quando ele acontecer, para que a média do dia continue sendo uma média.</p></div>
+        <div class="card"><h3>Check-in semanal</h3><p>A escala PEG (dor, prazer de viver e atividade geral), uma medida curta e validada usada para acompanhar a dor crônica ao longo do tempo.</p></div>
+        <div class="card"><h3>Histórico</h3><p>Um calendário dos seus dias. Toque em um dia para ver os detalhes ou registrar um dia que ficou para trás.</p></div>
+        <div class="card"><h3>Relatório em PDF</h3><p>Um resumo de uma página do período que você escolher, pronto para compartilhar com sua equipe de saúde.</p></div>
+        <div class="card"><h3>Saúde, se você quiser</h3><p>Veja sono, passos e ciclo ao lado da sua dor. Somente leitura.</p></div>
+        <div class="card"><h3>Lembretes</h3><p>Um lembrete diário no horário que você escolher e outro para o check-in semanal.</p></div>
+      </div>
+      <div class="card note">
+        <span class="dot" aria-hidden="true"></span>
+        <p>O Pali é um diário, não um dispositivo médico. Ele não diagnostica, não trata e não dá orientação médica. Siga sempre as orientações da sua equipe de saúde.</p>
+      </div>
+      <p class="muted" style="margin-top:16px">Disponível em inglês, espanhol e português do Brasil. Requer iOS 17.6 ou posterior.</p>
+    </section>
+
+    <section id="privacy-pt" class="policy">
+      <h2>Política de Privacidade</h2>
+      <p class="updated">Última atualização: 7 de outubro de 2026</p>
+      <div class="card">
+        <p class="summary"><strong>Em resumo: seu diário fica no seu iPhone.</strong> Nós não coletamos, não vemos, não vendemos e não compartilhamos o que você registra.</p>
+        <p class="muted">Esta política explica como o Pali: Pain Diary (“Pali”) trata as suas informações. O Pali é desenvolvido pela Pytyvo Labs (CAMILE ALVES ANCINES LTDA, Brasil).</p>
+      </div>
+      <div class="card">
+        <h3>1. Informações que coletamos</h3>
+        <p>Nenhuma. O Pali não tem conta, servidor nem sincronização na nuvem, então não temos como ver o que você registra.</p>
+      </div>
+      <div class="card">
+        <h3>2. O que o Pali guarda no seu iPhone</h3>
+        <p>Seus registros diários, crises, check-ins semanais, mapa do corpo, medicações, gatilhos, alívios, notas e ajustes ficam apenas no seu aparelho, protegidos pela proteção de dados do iOS.</p>
+        <p>Se você usa o Backup do iCloud ou faz backup do iPhone no computador, seu diário entra nesses backups. Eles são gerenciados pela Apple na sua conta, e nós não temos acesso a eles.</p>
+      </div>
+      <div class="card">
+        <h3>3. App Saúde (Apple Health)</h3>
+        <p>Se você escolher conectar o app Saúde, o Pali lê sono, passos e fluxo menstrual para mostrá-los ao lado da sua dor, no app e no relatório em PDF.</p>
+        <ul>
+          <li>O Pali nunca grava nada no Saúde.</li>
+          <li>O Pali não armazena dados do Saúde. Ele os lê quando precisa e os deixa fora de backups e exportações.</li>
+          <li>Dados do Saúde nunca são usados para publicidade nem compartilhados com ninguém.</li>
+        </ul>
+        <p>Você pode mudar ou revogar o acesso a qualquer momento no app Saúde (seu perfil, depois Apps, depois Pali) ou desligar no Pali em Ajustes &gt; Saúde.</p>
+      </div>
+      <div class="card">
+        <h3>4. Notificações</h3>
+        <p>Os lembretes são agendados no seu iPhone. Nada passa por servidores nossos, porque não temos nenhum.</p>
+      </div>
+      <div class="card">
+        <h3>5. Compartilhamento e exportação</h3>
+        <p>Seus dados só saem do iPhone quando você escolhe: ao compartilhar um relatório em PDF, um backup (JSON) ou uma planilha (CSV). Depois de enviado, o arquivo fica sob responsabilidade do app ou da pessoa que o recebeu. A importação só adiciona dados de um arquivo que você escolher.</p>
+      </div>
+      <div class="card">
+        <h3>6. Quando você fala com a gente</h3>
+        <p>Se você escrever para <a href="mailto:dev@pytyvolabs.com">dev@pytyvolabs.com</a>, recebemos seu endereço de e-mail e o que você incluir na mensagem. O e-mail de feedback que o Pali prepara inclui as versões do app e do iOS para facilitar o suporte. Usamos isso apenas para responder e melhorar o Pali, e apagamos quando não for mais necessário.</p>
+      </div>
+      <div class="card">
+        <h3>7. Análises, anúncios e rastreamento</h3>
+        <p>O Pali não tem análises, anúncios nem SDKs de terceiros, e não rastreia você em outros apps ou sites.</p>
+        <p>Se você escolheu compartilhar análises com desenvolvedores nos ajustes do iPhone, a Apple pode nos fornecer relatórios de falhas e estatísticas de uso anônimos. Eles nunca incluem o seu diário.</p>
+      </div>
+      <div class="card">
+        <h3>8. Suas escolhas e direitos</h3>
+        <p>Você pode exportar ou apagar tudo o que o Pali guarda a qualquer momento: exporte em Ajustes &gt; Exportar e importar, apague em Ajustes &gt; Excluir todos os dados, ou simplesmente apague o app.</p>
+        <p>Como não mantemos dados pessoais seus, não há nada para acessar, corrigir ou apagar do nosso lado. Você pode sempre nos escrever com dúvidas sobre seus direitos sob leis como a LGPD ou o GDPR europeu.</p>
+      </div>
+      <div class="card">
+        <h3>9. Crianças</h3>
+        <p>O Pali é feito para adultos que convivem com dor crônica e não é direcionado a crianças.</p>
+      </div>
+      <div class="card">
+        <h3>10. Alterações</h3>
+        <p>Se esta política mudar, atualizaremos esta página e a data no topo.</p>
+      </div>
+      <div class="card">
+        <h3>11. Contato</h3>
+        <p>Pytyvo Labs (CAMILE ALVES ANCINES LTDA), Brasil<br><a href="mailto:dev@pytyvolabs.com">dev@pytyvolabs.com</a></p>
+      </div>
+    </section>
+
+    <section id="support-pt">
+      <h2>Suporte</h2>
+      <div class="card">
+        <p>Dúvidas, ideias ou algum problema? Escreva para a gente. No app, Ajustes &gt; Feedback abre um e-mail com as versões do app e do iOS já preenchidas.</p>
+        <a class="mail" href="mailto:dev@pytyvolabs.com?subject=Pali">dev@pytyvolabs.com</a>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <details>
+          <summary>Como passo meu diário para um iPhone novo?</summary>
+          <p>Se você configurar o iPhone novo a partir de um backup do iCloud ou do computador, o diário vem junto. Se não, no iPhone antigo vá em Ajustes &gt; Exportar e importar, compartilhe o Backup para um lugar de confiança (Arquivos ou AirDrop) e, no iPhone novo, abra a mesma tela e escolha Importar um backup.</p>
+        </details>
+        <details>
+          <summary>Meus dados do Saúde não aparecem.</summary>
+          <p>O iOS não informa aos apps o que você permitiu. No app Saúde, abra seu perfil, vá em Apps, escolha Pali e ative Sono, Passos e Fluxo Menstrual. Os dados só aparecem nos dias que os têm no Saúde.</p>
+        </details>
+        <details>
+          <summary>Os lembretes não chegam.</summary>
+          <p>Confira se as notificações do Pali estão ativadas em Ajustes &gt; Notificações do iPhone e se os lembretes estão ligados no Pali, em Ajustes &gt; Lembretes. O lembrete diário pula os dias que você já registrou.</p>
+        </details>
+        <details>
+          <summary>Posso apagar tudo?</summary>
+          <p>Sim. Ajustes &gt; Excluir todos os dados apaga seu diário do iPhone. Apagar o app tem o mesmo efeito.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Pytyvo Labs</p>
+    <p>Apple, Apple Health and iPhone are trademarks of Apple Inc.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var supported = ["en", "es", "pt-BR"];
+  var meta = {
+    "en": { title: "Pali: Pain Diary", desc: "A calm pain diary for iPhone. Your diary stays on your iPhone: no account, no server, no tracking.", suffix: "", group: "Language" },
+    "es": { title: "Pali: Pain Diary", desc: "Un diario del dolor tranquilo para iPhone. Tu diario se queda en tu iPhone: sin cuenta, sin servidor, sin rastreo.", suffix: "-es", group: "Idioma" },
+    "pt-BR": { title: "Pali: Pain Diary", desc: "Um diário de dor tranquilo para iPhone. Seu diário fica no seu iPhone: sem conta, sem servidor, sem rastreamento.", suffix: "-pt", group: "Idioma" }
+  };
+  var anchors = ["about", "privacy", "support"];
+
+  function normalize(value) {
+    if (!value) return null;
+    var v = value.toLowerCase();
+    if (v.indexOf("pt") === 0) return "pt-BR";
+    if (v.indexOf("es") === 0) return "es";
+    if (v.indexOf("en") === 0) return "en";
+    return null;
+  }
+
+  function initialLanguage() {
+    var fromURL = normalize(new URLSearchParams(location.search).get("lang"));
+    if (fromURL) return fromURL;
+    var list = navigator.languages || [navigator.language];
+    for (var i = 0; i < list.length; i++) {
+      var match = normalize(list[i]);
+      if (match) return match;
+    }
+    return "en";
+  }
+
+  // Maps a plain #privacy (the App Store link) to the section in the shown language.
+  function baseAnchor(hash) {
+    var id = (hash || "").replace("#", "").replace(/-(es|pt)$/, "");
+    return anchors.indexOf(id) >= 0 ? id : null;
+  }
+
+  function apply(lang, keepScroll) {
+    var root = document.documentElement;
+    root.setAttribute("data-lang", lang);
+    root.lang = lang;
+    document.title = meta[lang].title;
+    document.querySelector('meta[name="description"]').setAttribute("content", meta[lang].desc);
+    document.querySelector(".langs").setAttribute("aria-label", meta[lang].group);
+    document.querySelectorAll(".langs button").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.set === lang ? "true" : "false");
+    });
+    var base = baseAnchor(location.hash);
+    var url = new URL(location.href);
+    url.searchParams.set("lang", lang);
+    if (base) url.hash = base + meta[lang].suffix;
+    history.replaceState(null, "", url);
+    if (base && !keepScroll) {
+      var target = document.getElementById(base + meta[lang].suffix);
+      if (target) target.scrollIntoView();
+    }
+  }
+
+  document.querySelectorAll(".langs button").forEach(function (b) {
+    b.addEventListener("click", function () { apply(b.dataset.set, true); });
+  });
+
+  if (supported.indexOf(initialLanguage()) >= 0) apply(initialLanguage(), false);
+})();
+</script>
+</body>
+</html>
